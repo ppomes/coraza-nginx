@@ -188,6 +188,7 @@ jobs:
 
           # Start nginx
           sudo mkdir -p /var/cache/nginx/client_temp /var/log/nginx /tmp/empty
+          echo "OK" | sudo tee /tmp/empty/index.html > /dev/null
           sudo /usr/sbin/nginx
           sleep 2
 
