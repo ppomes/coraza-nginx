@@ -184,7 +184,7 @@ jobs:
           sudo cp /tmp/coraza-rules.conf /opt/coraza/config/coraza-rules.conf
 
           # Install nginx test config
-          sudo cp coraza-connector-tests/configs/nginx-test.conf /usr/local/nginx/conf/nginx.conf
+          sudo cp coraza-connector-tests/configs/nginx-test.conf /etc/nginx/nginx.conf
 
           # Start nginx
           sudo /usr/sbin/nginx
