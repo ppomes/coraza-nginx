@@ -142,9 +142,6 @@ jobs:
       - name: Install go-ftw
         run: go install github.com/coreruleset/go-ftw@latest
 
-      - name: Clone shared test suite
-        run: git clone https://github.com/ppomes/coraza-connector-tests.git
-
       - name: Setup CRS and run go-ftw tests
         run: |
           # Download CRS
@@ -184,7 +181,7 @@ jobs:
           sudo cp /tmp/coraza-rules.conf /opt/coraza/config/coraza-rules.conf
 
           # Install nginx test config
-          sudo cp coraza-connector-tests/configs/nginx-test.conf /etc/nginx/nginx.conf
+          sudo cp tests/ftw/nginx-test.conf /etc/nginx/nginx.conf
 
           # Start nginx
           sudo mkdir -p /var/cache/nginx/client_temp /var/log/nginx /tmp/empty
@@ -193,14 +190,13 @@ jobs:
           sleep 2
 
           # Run go-ftw
-          cd coraza-connector-tests
-          cat > .ftw.yaml <<'EOF'
+          cat > /tmp/.ftw.yaml <<'EOF'
           testoverride:
             input:
               dest_addr: "127.0.0.1"
               port: 80
           EOF
-          ~/go/bin/go-ftw run --cloud -d tests/
+          ~/go/bin/go-ftw run --cloud --config /tmp/.ftw.yaml -d tests/ftw/
 
           # Stop nginx
           sudo /usr/sbin/nginx -s stop
