@@ -187,6 +187,7 @@ jobs:
           sudo cp coraza-connector-tests/configs/nginx-test.conf /etc/nginx/nginx.conf
 
           # Start nginx
+          sudo mkdir -p /var/cache/nginx/client_temp /var/log/nginx /tmp/empty
           sudo /usr/sbin/nginx
           sleep 2
 
