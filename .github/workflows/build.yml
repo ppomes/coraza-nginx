@@ -151,7 +151,7 @@ jobs:
           CRS_VERSION="4.25.0"
           curl -sSL "https://github.com/coreruleset/coreruleset/archive/refs/tags/v${CRS_VERSION}.tar.gz" -o /tmp/crs.tar.gz
           sudo mkdir -p /opt/coraza/owasp-crs /opt/coraza/config /opt/coraza/config.d /opt/coraza/plugins /opt/coraza/rules /opt/coraza/rules.d /opt/coraza/overrides
-          sudo tar xzf /tmp/crs.tar.gz --strip-components=1 -C /tmp
+          sudo tar xzf /tmp/crs.tar.gz -C /tmp
           sudo cp -r /tmp/coreruleset-${CRS_VERSION}/rules /opt/coraza/owasp-crs/
           sudo cp -r /tmp/coreruleset-${CRS_VERSION}/plugins /opt/coraza/owasp-crs/
           sudo cp /tmp/coreruleset-${CRS_VERSION}/crs-setup.conf.example /opt/coraza/config/crs-setup.conf
@@ -192,13 +192,13 @@ jobs:
 
           # Run go-ftw
           cd coraza-connector-tests
-          cat > .ftw.yaml <<EOF
+          cat > .ftw.yaml <<'EOF'
           testoverride:
             input:
               dest_addr: "127.0.0.1"
               port: 80
           EOF
-          go-ftw run --cloud -d tests/
+          ~/go/bin/go-ftw run --cloud -d tests/
 
           # Stop nginx
           sudo /usr/sbin/nginx -s stop
