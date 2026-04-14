@@ -139,6 +139,70 @@ jobs:
           export TEST_NGINX_GLOBALS="load_module \"/usr/lib/nginx/modules/ngx_http_coraza_module.so\";"
           prove coraza*.t
 
+      - name: Install go-ftw
+        run: go install github.com/coreruleset/go-ftw@latest
+
+      - name: Clone shared test suite
+        run: git clone https://github.com/ppomes/coraza-connector-tests.git
+
+      - name: Setup CRS and run go-ftw tests
+        run: |
+          # Download CRS
+          CRS_VERSION="4.25.0"
+          curl -sSL "https://github.com/coreruleset/coreruleset/archive/refs/tags/v${CRS_VERSION}.tar.gz" -o /tmp/crs.tar.gz
+          sudo mkdir -p /opt/coraza/owasp-crs /opt/coraza/config /opt/coraza/config.d /opt/coraza/plugins /opt/coraza/rules /opt/coraza/rules.d /opt/coraza/overrides
+          sudo tar xzf /tmp/crs.tar.gz --strip-components=1 -C /tmp
+          sudo cp -r /tmp/coreruleset-${CRS_VERSION}/rules /opt/coraza/owasp-crs/
+          sudo cp -r /tmp/coreruleset-${CRS_VERSION}/plugins /opt/coraza/owasp-crs/
+          sudo cp /tmp/coreruleset-${CRS_VERSION}/crs-setup.conf.example /opt/coraza/config/crs-setup.conf
+
+          # Create coraza config
+          cat > /tmp/coraza.conf <<'CONF'
+          SecRuleEngine On
+          SecRequestBodyAccess On
+          SecResponseBodyAccess Off
+          SecAuditEngine Off
+          CONF
+          sudo cp /tmp/coraza.conf /opt/coraza/config/coraza.conf
+
+          # Create rules include chain
+          cat > /tmp/coraza-rules.conf <<'CONF'
+          Include /opt/coraza/config/coraza.conf
+          Include /opt/coraza/config.d/*.conf
+          Include /opt/coraza/config/crs-setup.conf
+          Include /opt/coraza/owasp-crs/plugins/*-config.conf
+          Include /opt/coraza/owasp-crs/plugins/*-before.conf
+          Include /opt/coraza/owasp-crs/rules/*.conf
+          Include /opt/coraza/owasp-crs/plugins/*-after.conf
+          Include /opt/coraza/plugins/*-config.conf
+          Include /opt/coraza/plugins/*-before.conf
+          Include /opt/coraza/plugins/*-after.conf
+          Include /opt/coraza/rules/*.conf
+          Include /opt/coraza/rules.d/*.conf
+          Include /opt/coraza/overrides/*.conf
+          CONF
+          sudo cp /tmp/coraza-rules.conf /opt/coraza/config/coraza-rules.conf
+
+          # Install nginx test config
+          sudo cp coraza-connector-tests/configs/nginx-test.conf /usr/local/nginx/conf/nginx.conf
+
+          # Start nginx
+          sudo /usr/sbin/nginx
+          sleep 2
+
+          # Run go-ftw
+          cd coraza-connector-tests
+          cat > .ftw.yaml <<EOF
+          testoverride:
+            input:
+              dest_addr: "127.0.0.1"
+              port: 80
+          EOF
+          go-ftw run --cloud -d tests/
+
+          # Stop nginx
+          sudo /usr/sbin/nginx -s stop
+
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
         with:
