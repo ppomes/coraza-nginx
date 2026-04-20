@@ -139,6 +139,37 @@ jobs:
           export TEST_NGINX_GLOBALS="load_module \"/usr/lib/nginx/modules/ngx_http_coraza_module.so\";"
           prove coraza*.t
 
+      - name: Install go-ftw
+        run: |
+          # renovate: depName=coreruleset/go-ftw datasource=github-releases
+          go install github.com/coreruleset/go-ftw/v2@v2.1.0
+
+      - name: Run CRS regression tests
+        run: |
+          # Download CRS
+          # renovate: datasource=github-releases depName=coreruleset/coreruleset
+          CRS_VERSION="4.25.0"
+          curl -sSL "https://github.com/coreruleset/coreruleset/archive/refs/tags/v${CRS_VERSION}.tar.gz" -o /tmp/crs.tar.gz
+          tar xzf /tmp/crs.tar.gz -C /tmp
+          mv /tmp/coreruleset-${CRS_VERSION} /tmp/crs
+
+          # Prepare web root
+          mkdir -p /tmp/htdocs
+          echo "OK" > /tmp/htdocs/index.html
+
+          # Start nginx with CRS config
+          sudo LD_LIBRARY_PATH=/usr/local/lib /usr/sbin/nginx -c ${{ github.workspace }}/tests/nginx-crs.conf
+          for i in $(seq 1 10); do
+            if [ -f /tmp/nginx-crs.pid ]; then break; fi
+            sleep 1
+          done
+
+          # Run go-ftw
+          ~/go/bin/go-ftw run --cloud --config tests/ftw-crs.yml -d /tmp/crs/tests/regression/tests/
+
+          # Stop nginx
+          sudo /usr/sbin/nginx -s stop -c ${{ github.workspace }}/tests/nginx-crs.conf
+
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
         with:
